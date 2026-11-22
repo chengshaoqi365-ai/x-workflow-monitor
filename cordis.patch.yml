@@ -1,0 +1,3 @@
+- insert:
+    - id: x-workflow-monitor
+      name: '@local/x-workflow-monitor'

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "X workflow monitor",
+    "description": "Shows the current X automation workflow, recent discoveries, candidates, and action counts under the composer.",
+    "detail": "docs/DETAIL.md"
+  }
+}
