@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Add a left-sidebar **X 工作流** entry and a full workflow page.
+- Keep the compact composer-dock monitor.
+
 ## 0.1.0
 
 - Initial DSH Web plugin.
