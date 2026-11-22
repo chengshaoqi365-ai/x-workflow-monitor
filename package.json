@@ -34,5 +34,13 @@
     "dsh-plugin",
     "x-automation",
     "workflow-monitor"
-  ]
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chengshaoqi365-ai/x-workflow-monitor.git"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs"
+  }
 }
