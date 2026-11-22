@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const h = React.createElement;
-    const { useEffect, useState } = React;
+    const { useCallback, useEffect, useState } = React;
     const ENDPOINT = 'http://127.0.0.1:8787/status';
 
     const T = {
@@ -21,8 +21,8 @@ window.__ModuleLoader__.load({
     function Dot({ color }) {
       return h('span', {
         style: {
-          display: 'inline-block', width: 7, height: 7, borderRadius: 99,
-          background: color, boxShadow: `0 0 0 3px ${color}22`,
+          display: 'inline-block', width: 8, height: 8, borderRadius: 99,
+          background: color, boxShadow: `0 0 0 3px ${color}22`, flex: 'none',
         },
       });
     }
@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
     function Chip({ label, value, color }) {
       return h('div', {
         style: {
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '4px 9px', borderRadius: 7, background: T.soft,
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '6px 11px', borderRadius: 8, background: T.soft,
           border: `1px solid ${T.border}`, whiteSpace: 'nowrap',
         },
       },
@@ -41,29 +41,21 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function MiniList({ title, rows, empty }) {
-      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 3 } },
-        h('div', { style: { color: T.muted, fontSize: 11 } }, title),
-        rows && rows.length
-          ? rows.map((r, i) => h('div', {
-              key: i,
-              title: r.detail || r.text || '',
-              style: {
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                color: T.text, fontSize: 11.5,
-              },
-            }, r.label))
-          : h('div', { style: { color: T.muted, fontSize: 11.5 } }, empty)
-      );
-    }
-
-    function WorkflowMonitor() {
+    function useWorkflowData() {
       const [state, setState] = useState({ loading: true, data: null, error: '' });
-
+      const load = useCallback(async () => {
+        try {
+          const res = await fetch(ENDPOINT, { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          setState({ loading: false, data, error: '' });
+        } catch (err) {
+          setState({ loading: false, data: null, error: String(err) });
+        }
+      }, []);
       useEffect(() => {
         let alive = true;
-        let timer = null;
-        const load = async () => {
+        const tick = async () => {
           try {
             const res = await fetch(ENDPOINT, { cache: 'no-store' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -73,34 +65,72 @@ window.__ModuleLoader__.load({
             if (alive) setState({ loading: false, data: null, error: String(err) });
           }
         };
-        load();
-        timer = setInterval(load, 5000);
-        return () => { alive = false; if (timer) clearInterval(timer); };
+        tick();
+        const timer = setInterval(tick, 5000);
+        return () => { alive = false; clearInterval(timer); };
       }, []);
+      return { ...state, reload: load };
+    }
 
-      const d = state.data;
-      const wf = d && d.workflow ? d.workflow : {};
+    function summary(data) {
+      const wf = data && data.workflow ? data.workflow : {};
       const actions = wf.actions || {};
       const cand = wf.candidates || {};
-      const tweets = wf.tweets || 0;
-      const clean = wf.chrome_clean === true;
-      const hasData = !!d;
+      return {
+        clean: wf.chrome_clean === true,
+        tweets: wf.tweets || 0,
+        candidates: cand,
+        actions,
+      };
+    }
 
-      const chips = [
-        { label: '安全门', value: clean ? 'CLEAN' : '未确认', color: clean ? T.green : T.orange },
-        { label: 'Connect 发现', value: `${tweets} 条`, color: T.blue },
-        { label: '候选人', value: `new ${cand.new || 0} / skipped ${cand.skipped || 0}`, color: T.blue },
-        { label: '今日动作', value: `赞 ${actions.like || 0} · 回 ${actions.reply || 0} · 关 ${actions.follow || 0}`, color: T.green },
-      ];
+    function StatusRow({ data }) {
+      const s = summary(data);
+      return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 7 } },
+        h(Chip, { label: '安全门', value: s.clean ? 'CLEAN' : '未确认', color: s.clean ? T.green : T.orange }),
+        h(Chip, { label: 'Connect 发现', value: `${s.tweets} 条`, color: T.blue }),
+        h(Chip, { label: '候选人', value: `new ${s.candidates.new || 0} / skipped ${s.candidates.skipped || 0}`, color: T.blue }),
+        h(Chip, { label: '今日动作', value: `赞 ${s.actions.like || 0} · 回 ${s.actions.reply || 0} · 关 ${s.actions.follow || 0}`, color: T.green })
+      );
+    }
 
-      const tweetRows = (d && d.recent_tweets ? d.recent_tweets : []).map((x) => ({
-        label: `@${x.author} · ${x.text}`,
-        detail: x.text,
-      }));
-      const candRows = (d && d.recent_candidates ? d.recent_candidates : []).map((x) => ({
-        label: `@${x.handle} · ${x.status}${x.followers != null ? ' · ' + x.followers + ' 粉丝' : ''}`,
-      }));
+    function Recent({ data }) {
+      const tweets = (data && data.recent_tweets) || [];
+      const candidates = (data && data.recent_candidates) || [];
+      const listStyle = { display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 };
+      const itemStyle = {
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        color: T.text, fontSize: 12,
+      };
+      return h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 } },
+        h('div', { style: listStyle },
+          h('div', { style: { color: T.muted, fontSize: 11 } }, '最近发现'),
+          tweets.length ? tweets.map((x, i) => h('div', { key: i, style: itemStyle, title: x.text },
+            `@${x.author} · ${x.text}`)) : h('div', { style: { ...itemStyle, color: T.muted } }, '暂无记录')
+        ),
+        h('div', { style: listStyle },
+          h('div', { style: { color: T.muted, fontSize: 11 } }, '最近候选人'),
+          candidates.length ? candidates.map((x, i) => h('div', { key: i, style: itemStyle },
+            `@${x.handle} · ${x.status}${x.followers != null ? ' · ' + x.followers + ' 粉丝' : ''}`))
+            : h('div', { style: { ...itemStyle, color: T.muted } }, '暂无记录')
+        )
+      );
+    }
 
+    function EmptyState({ error }) {
+      return h('div', {
+        style: {
+          padding: '14px 16px', borderRadius: 10, border: `1px dashed ${T.border}`,
+          color: T.muted, fontSize: 12, lineHeight: 1.7, background: T.soft,
+        },
+      },
+        error ? '状态服务未连接。在 x-desktop-auto 目录运行：python3 scripts/status_server.py' : '正在读取状态…'
+      );
+    }
+
+    function WorkflowPanel() {
+      const state = useWorkflowData();
+      const d = state.data;
       return h('div', {
         role: 'status',
         'aria-live': 'polite',
@@ -112,23 +142,53 @@ window.__ModuleLoader__.load({
         },
       },
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-          h(Dot, { color: hasData ? T.green : T.orange }),
+          h(Dot, { color: d ? T.green : T.orange }),
           h('strong', { style: { fontSize: 12.5 } }, 'X 自动化工作流'),
           h('span', { style: { color: T.muted, fontSize: 11 } },
-            state.loading ? '连接状态服务…' : hasData ? `更新 ${d.updated_at || ''}` : '状态服务未启动'),
+            state.loading ? '连接状态服务…' : d ? `更新 ${d.updated_at || ''}` : '状态服务未启动'),
           h('span', { style: { flex: 1 } }),
           h('span', { style: { color: T.muted, fontSize: 11 } }, '@Veylon_lg')
         ),
-        !hasData
-          ? h('div', { style: { color: T.muted, fontSize: 11.5, lineHeight: 1.6 } },
-              state.error ? '状态服务未连接。在 x-desktop-auto 目录运行：python3 scripts/status_server.py' : '正在读取状态…')
-          : h(React.Fragment, null,
-              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, chips.map((x, i) => h(Chip, { key: i, ...x }))),
-              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 } },
-                h(MiniList, { title: '最近发现', rows: tweetRows, empty: '暂无记录' }),
-                h(MiniList, { title: '最近候选人', rows: candRows, empty: '暂无记录' })
-              )
-            )
+        d ? h(React.Fragment, null, h(StatusRow, { data: d }), h(Recent, { data: d })) : h(EmptyState, { error: state.error })
+      );
+    }
+
+    function WorkflowPage() {
+      const state = useWorkflowData();
+      const d = state.data;
+      const page = {
+        padding: '36px 40px 60px', maxWidth: 1080, margin: '0 auto',
+        color: T.text, fontFamily: 'var(--dsw-alias-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)',
+      };
+      return h('div', { style: page },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 } },
+          h(Dot, { color: d ? T.green : T.orange }),
+          h('h1', { style: { fontSize: 24, margin: 0, fontWeight: 650 } }, 'X 自动化工作流'),
+          h('span', { style: { color: T.muted, fontSize: 12 } }, '@Veylon_lg')
+        ),
+        h('div', { style: { color: T.muted, fontSize: 12, marginBottom: 22 } },
+          state.loading ? '正在连接状态服务…' : d ? `状态更新时间 ${d.updated_at || ''}` : '状态服务未启动'),
+        d ? h(React.Fragment, null,
+          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 } }, h(StatusRow, { data: d })),
+          h('div', {
+            style: {
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18,
+              padding: 20, border: `1px solid ${T.border}`, borderRadius: 14, background: T.bg,
+            },
+          }, h(Recent, { data: d }))
+        ) : h(EmptyState, { error: state.error })
+      );
+    }
+
+    function PanelIcon({ size = 16 }) {
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true,
+        style: { display: 'block' },
+      },
+        h('circle', { cx: 6, cy: 7, r: 2.2, fill: 'currentColor' }),
+        h('circle', { cx: 18, cy: 7, r: 2.2, fill: 'currentColor', opacity: 0.65 }),
+        h('circle', { cx: 12, cy: 17, r: 2.2, fill: 'currentColor', opacity: 0.85 }),
+        h('path', { d: 'M8 8.5l8 0M7.5 9l3.8 6M16.5 9l-3.8 6', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' })
       );
     }
 
@@ -136,10 +196,14 @@ window.__ModuleLoader__.load({
       inject: ['slots'],
       apply(ctx) {
         ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
-          name: 'conversation.composer.dock',
-          id: 'x-workflow-monitor',
-          order: 50,
-        }, WorkflowMonitor));
+          name: 'conversation.composer.dock', id: 'x-workflow-monitor', order: 50,
+        }, WorkflowPanel));
+        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+          name: 'sidebar.panellist', id: 'x-workflow-monitor', order: 20, label: 'X 工作流',
+        }, PanelIcon));
+        ctx.slots.inject('main', () => ctx.slots.register({
+          name: 'main', key: 'x-workflow-monitor',
+        }, WorkflowPage));
       },
     };
   },
