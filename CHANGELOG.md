@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Show the workflow only in the left sidebar; remove the composer-dock panel.
+
 ## 0.2.0
 
 - Add a left-sidebar **X 工作流** entry and a full workflow page.

@@ -128,31 +128,6 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function WorkflowPanel() {
-      const state = useWorkflowData();
-      const d = state.data;
-      return h('div', {
-        role: 'status',
-        'aria-live': 'polite',
-        style: {
-          margin: '4px 0 2px', padding: '10px 14px', borderRadius: 12,
-          border: `1px solid ${T.border}`, background: T.bg, color: T.text,
-          fontFamily: 'var(--dsw-alias-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif)',
-          fontSize: 12, display: 'flex', flexDirection: 'column', gap: 8,
-        },
-      },
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-          h(Dot, { color: d ? T.green : T.orange }),
-          h('strong', { style: { fontSize: 12.5 } }, 'X 自动化工作流'),
-          h('span', { style: { color: T.muted, fontSize: 11 } },
-            state.loading ? '连接状态服务…' : d ? `更新 ${d.updated_at || ''}` : '状态服务未启动'),
-          h('span', { style: { flex: 1 } }),
-          h('span', { style: { color: T.muted, fontSize: 11 } }, '@Veylon_lg')
-        ),
-        d ? h(React.Fragment, null, h(StatusRow, { data: d }), h(Recent, { data: d })) : h(EmptyState, { error: state.error })
-      );
-    }
-
     function WorkflowPage() {
       const state = useWorkflowData();
       const d = state.data;
@@ -195,9 +170,6 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots'],
       apply(ctx) {
-        ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
-          name: 'conversation.composer.dock', id: 'x-workflow-monitor', order: 50,
-        }, WorkflowPanel));
         ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
           name: 'sidebar.panellist', id: 'x-workflow-monitor', order: 20, label: 'X 工作流',
         }, PanelIcon));
