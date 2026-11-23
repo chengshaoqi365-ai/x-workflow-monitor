@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Add connect-flow round chips: checked ids, seen handles, new follows / likes / replies.
+
 ## 0.3.0
 
 - Show the workflow only in the left sidebar; remove the composer-dock panel.

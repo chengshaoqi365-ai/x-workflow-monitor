@@ -76,11 +76,14 @@ window.__ModuleLoader__.load({
       const wf = data && data.workflow ? data.workflow : {};
       const actions = wf.actions || {};
       const cand = wf.candidates || {};
+      const connect = wf.connect || {};
       return {
         clean: wf.chrome_clean === true,
         tweets: wf.tweets || 0,
         candidates: cand,
         actions,
+        connect,
+        connectSeen: wf.connect_seen || 0,
       };
     }
 
@@ -89,7 +92,8 @@ window.__ModuleLoader__.load({
       return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 7 } },
         h(Chip, { label: '安全门', value: s.clean ? 'CLEAN' : '未确认', color: s.clean ? T.green : T.orange }),
         h(Chip, { label: 'Connect 发现', value: `${s.tweets} 条`, color: T.blue }),
-        h(Chip, { label: '候选人', value: `new ${s.candidates.new || 0} / skipped ${s.candidates.skipped || 0}`, color: T.blue }),
+        h(Chip, { label: '本轮检查', value: `${s.connect.checked || 0}/30 · 已见 ${s.connectSeen}`, color: T.blue }),
+        h(Chip, { label: '本轮动作', value: `关 ${s.connect.new_follows || 0} · 赞 ${s.connect.likes || 0} · 回 ${s.connect.replies || 0}`, color: T.green }),
         h(Chip, { label: '今日动作', value: `赞 ${s.actions.like || 0} · 回 ${s.actions.reply || 0} · 关 ${s.actions.follow || 0}`, color: T.green })
       );
     }
