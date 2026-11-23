@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "X workflow monitor",
-    "description": "Shows the current X automation workflow, recent discoveries, candidates, and action counts under the composer.",
+    "description": "Shows X automation progress, recent discoveries and candidates in the left sidebar, with run control for start, dry-run, stop and live logs.",
     "detail": "docs/DETAIL.md"
   }
 }

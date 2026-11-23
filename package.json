@@ -1,6 +1,6 @@
 {
   "name": "@local/x-workflow-monitor",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -29,7 +29,7 @@
       ]
     }
   },
-  "description": "DSH plugin that visualizes the current X automation workflow, discoveries, candidates, and action counts.",
+  "description": "DSH plugin that visualizes the X automation workflow and starts or stops the local connect flow through its control service.",
   "keywords": [
     "dsh-plugin",
     "x-automation",
