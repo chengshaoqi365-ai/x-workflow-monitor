@@ -1,6 +1,6 @@
 {
   "name": "@local/x-workflow-monitor",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -29,7 +29,7 @@
       ]
     }
   },
-  "description": "DSH plugin that visualizes the X automation workflow and starts or stops the local connect flow through its control service.",
+  "description": "DSH plugin that shows the X automation run detail and to-do queue, with start, dry-run and stop through the local control service.",
   "keywords": [
     "dsh-plugin",
     "x-automation",

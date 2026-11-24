@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "X workflow monitor",
-    "description": "Shows X automation progress, recent discoveries and candidates in the left sidebar, with run control for start, dry-run, stop and live logs.",
+    "description": "Shows the X automation run detail and to-do queue in the left sidebar: progress, current-round targets, failures and pending items, safety and today counts, with run settings, start, dry-run and stop.",
     "detail": "docs/DETAIL.md"
   }
 }

@@ -1,5 +1,58 @@
 # 插件验收记录
 
+## 0.5.0（2026-11-24）
+
+- 插件：`@local/x-workflow-monitor` 0.5.0
+- 工作区：`/Users/shaoqicheng/Documents/x 自动化 /x-workflow-monitor`
+- 本轮改动：`client.js` 重构为「运行详情 + 待办队列」；版本号、CHANGELOG、README、DETAIL、语言资源同步。
+
+### 静态
+
+- [x] `npm run validate` 通过
+- [x] `node --check client.js` 通过
+- [x] 仍注册在 `sidebar.panellist` + `main`，注册结构未变
+- [x] 未新增 Playwright / Patchright / CDP / 远程调试依赖或启动参数
+- [x] 未修改 `x-desktop-auto/` 任何文件、数据库或控制服务 API
+
+验证输出（0.5.0）：
+
+```text
+> @local/x-workflow-monitor@0.5.0 validate
+> node scripts/validate.mjs
+
+plugin manifest ok
+client.js / index.js / validate.mjs syntax ok
+no Playwright / CDP / remote-debugging dependency or flag
+control service endpoints present
+```
+
+### 渲染与交互（jsdom，49 项断言）
+
+- [x] 控制服务未连接时显示原文 `控制服务未启动，请在 x-desktop-auto 运行 bash scripts/start_control_server.sh`
+- [x] 状态服务未连接时显示 `状态服务未连接。在 x-desktop-auto 目录运行：python3 scripts/status_server.py`
+- [x] 运行 / 已完成 / 已停止 / 失败 / 未运行状态 pill 正确
+- [x] 旧接口回退：从 `control.log_tail` 推断当前目标与失败行，显示 `@desteffiong`、`回复失败：回复框未关闭（still_open）`
+- [x] v2 契约 fixture：本次第 2/3 轮、17/30、12 行目标表默认 10 行、查看全部抽屉 12 行
+- [x] 失败行展开显示推文摘要 / 失败详情 / 尝试次数 / 时间
+- [x] `chrome_clean === null` 显示“未检测”，`false` 显示“异常”，均不显示 CLEAN
+- [x] 今日计数不出现“限额 / 剩余额度 / 配额”
+- [x] 待处理列表只读，只有复制 `@handle`
+- [x] 原始日志默认折叠，打开后有自动跟随 / 只看错误 / 搜索 / 下载
+- [x] 开始 / dry-run / 停止按运行状态禁用；开始请求带 `rounds`、`max_checks:30`、`max_new_follows`、`dry_run`
+- [x] 409 `already_running` 显示「已有任务在运行」
+
+### 截图
+
+- [1280×800](1280x800.png)
+- [1440×900](1440x900.png)
+
+### 阻塞项（不自行改后端）
+
+1. `GET /status/v2`、`GET /actions`、`GET /runs`、`GET /pending` 尚未上线（2026-11-24 22:00 探测均为 404）。页面已按契约实现适配层，接口就绪后会直接切换；当前显示“未接入”空态。
+2. 控制服务 `log_tail` 只保留最近 40 行，无法满足 200 行日志要求；需要后端扩大 tail 或提供日志分页。
+3. 旧 `/status` 不返回账号时区、平台告警、出口、失败 / 跳过今日计数；当前显示“未接入 / 未监测”，不伪造。
+4. `actions.run_id` 与 `control.run_id` 历史上存在不一致，`/actions?run_id=` 可能查不到本轮；需按 docs/24 §5.4 统一后才能真正展示逐目标明细。
+
 - 插件：`@local/x-workflow-monitor` 0.4.0
 - 验证时间：2026-11-24 02:32 – 02:58（Asia/Shanghai）
 - 工作区：`/Users/shaoqicheng/Documents/x 自动化 /x-workflow-monitor`
