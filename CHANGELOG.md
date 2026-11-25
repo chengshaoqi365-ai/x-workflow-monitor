@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+
+- Move the X Workflow entry from the sidebar to the conversation toolbar, immediately before Pending changes. Keep a top-right entry available in blank conversations.
+- Add Back to conversation and focus the workflow heading when the page opens.
+
 ## 0.6.1
 
 - Remove the discovery and candidate pools and the duplicate Run settings section from the bottom of the dashboard. Run settings is available from the header.

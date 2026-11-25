@@ -1,6 +1,6 @@
 # x-workflow-monitor
 
-一个 DSH Web 插件：在左侧栏提供 **X 工作流** 入口，点击打开 **运行详情 + 待办队列** 页面，并通过本机控制服务开始、dry-run 或停止 connect 流程。
+在 DSH 会话右上角点击 **X 工作流** 图标，可查看运行详情与待办队列，并通过本机控制服务开始、试运行或停止 connect 流程。点击 **返回会话** 可回到原会话。
 
 ## 首屏内容
 
@@ -67,7 +67,7 @@ bash scripts/start_control_server.sh
 ```
 
 4. 安装后选择 **立即启用**。
-5. 刷新页面后，点击左侧栏 **X 工作流** 打开看板。
+5. 刷新页面并打开会话，点击右上角 **X 工作流** 图标打开看板。
 
 ### 更新已安装的旧版本
 
@@ -88,7 +88,7 @@ npm test
 package.json          DSH 插件 manifest + bundle 配置
 cordis.patch.yml      Host 插件行
 index.js              Host 服务启动接口
-client.js             左侧栏页面（状态、服务管理、运行控制）
+client.js             会话工具栏入口与工作流页面（状态、服务管理、运行控制）
 locale/zh.json        中文展示元信息
 locale/en.json        英文展示元信息
 docs/DETAIL.md        插件详情页文档

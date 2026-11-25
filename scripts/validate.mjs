@@ -60,7 +60,7 @@ for (const endpoint of [
 ]) {
   if (!client.includes(endpoint)) throw new Error(`client.js missing endpoint ${endpoint}`);
 }
-for (const marker of ['sidebar.panellist', "name: 'main'"]) {
+for (const marker of ["name: 'conversation.session.header.utilities'", "name: 'main'"]) {
   if (!client.includes(marker)) throw new Error(`client.js missing slot registration marker: ${marker}`);
 }
 console.log('plugin manifest ok');

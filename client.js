@@ -27,6 +27,7 @@ window.__ModuleLoader__.load({
     // ---------------------------------------------------------------------
     const zh = {
       'panel.label': 'X 工作流',
+      'panel.back': '返回会话',
       'page.title': 'X 自动化工作流',
       'page.loading': '正在连接状态服务…',
       'page.updated': '状态更新时间 {time}',
@@ -268,6 +269,7 @@ window.__ModuleLoader__.load({
 
     const en = {
       'panel.label': 'X Workflow',
+      'panel.back': 'Back to conversation',
       'page.title': 'X automation workflow',
       'page.loading': 'Connecting to the status service…',
       'page.updated': 'Status updated at {time}',
@@ -1949,7 +1951,9 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function WorkflowPage({ t }) {
+    function WorkflowPage({ t, onBack }) {
+      const titleRef = useRef(null);
+      useEffect(() => { titleRef.current?.focus(); }, []);
       const tr = typeof t === 'function' ? t : (key) => key;
       const statusFeed = useStatusFeed();
       const controlApi = useControlStatus();
@@ -2137,7 +2141,7 @@ window.__ModuleLoader__.load({
             h('div', { className: 'xwm-title-block' },
               h('div', { className: 'xwm-title-line' },
                 h('span', { className: 'xwm-pill-dot', style: { width: 9, height: 9, background: statusColor(vm.status) } }),
-                h('h1', { className: 'xwm-title' }, tr('page.title')),
+                h('h1', { ref: titleRef, tabIndex: -1, className: 'xwm-title' }, tr('page.title')),
                 account ? h('span', { className: 'xwm-account' }, '@' + account) : null,
                 h(StatusPill, { status: vm.status, t: tr })
               ),
@@ -2151,6 +2155,7 @@ window.__ModuleLoader__.load({
               )
             ),
             h('div', { className: 'xwm-actions' },
+              h(Button, { variant: 'ghost', onClick: onBack }, tr('panel.back')),
               h(Button, { variant: 'secondary', onClick: (event) => setSettingsOpener(event.currentTarget), title: tr('settings.summary', { rounds: settings.rounds, perRound: PER_ROUND, maxNewFollows: settings.maxNewFollows }) }, tr('button.settings')),
               h(Button, { variant: 'primary', disabled: !canStart, onClick: () => start(false) }, pendingAction === 'run' ? tr('button.starting') : tr('button.start')),
               h(Button, { variant: 'secondary', disabled: !canStart, onClick: () => start(true) }, pendingAction === 'dry' ? tr('button.starting') : tr('button.dryRun')),
@@ -2189,7 +2194,7 @@ window.__ModuleLoader__.load({
     }
 
     // ---------------------------------------------------------------------
-    // Panel icon + plugin registration (unchanged slot structure)
+    // Conversation toolbar entry and workflow page registration
     // ---------------------------------------------------------------------
     function PanelIcon({ size = 16 }) {
       return h('svg', {
@@ -2203,18 +2208,42 @@ window.__ModuleLoader__.load({
       );
     }
 
+    const ENTRY_CSS = `
+.xwm-toolbar-entry{appearance:none;display:inline-grid;place-items:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:${T.secondary};cursor:pointer}
+.xwm-toolbar-entry:hover{background:${T.soft};color:${T.text}}
+.xwm-toolbar-entry:focus-visible{outline:2px solid ${T.blue};outline-offset:1px}
+.xwm-toolbar-fallback{position:absolute;inset-block-start:11px;inset-inline-end:56px}
+header:has(.xwm-toolbar-primary) .xwm-toolbar-fallback{display:none}
+`;
+
     return {
-      inject: ['slots', 'locale'],
+      inject: ['slots', 'locale', 'layout'],
       apply(ctx) {
+        const panelId = 'x-workflow-monitor';
+        const openWorkflow = () => ctx.layout.selectPanel(panelId);
+        const backToConversation = () => ctx.layout.selectPanel(null);
+
+        function WorkflowEntry({ t, fallback }) {
+          const label = t('panel.label');
+          return h(React.Fragment, null,
+            h('style', null, ENTRY_CSS),
+            h('button', {
+              type: 'button', title: label, 'aria-label': label, onClick: openWorkflow,
+              className: classNames('xwm-toolbar-entry', fallback ? 'xwm-toolbar-fallback' : 'xwm-toolbar-primary'),
+            }, h(PanelIcon))
+          );
+        }
+
         ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'x-workflow-monitor: dictionaries');
-        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
-          name: 'sidebar.panellist', id: 'x-workflow-monitor', order: 20,
-          label: () => ctx.locale.bind(NS)('panel.label'),
-          locale: NS,
-        }, PanelIcon));
+        ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
+          name: 'conversation.session.header.utilities', id: panelId, order: -6, locale: NS,
+        }, WorkflowEntry));
+        ctx.slots.inject('conversation.header.leading', () => ctx.slots.register({
+          name: 'conversation.header.leading', locale: NS,
+        }, (props) => h(WorkflowEntry, { ...props, fallback: true })));
         ctx.slots.inject('main', () => ctx.slots.register({
-          name: 'main', key: 'x-workflow-monitor', locale: NS,
-        }, WorkflowPage));
+          name: 'main', key: panelId, locale: NS,
+        }, (props) => h(WorkflowPage, { ...props, onBack: backToConversation })));
       },
     };
   },

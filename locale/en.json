@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "X workflow monitor",
-    "description": "Shows the X automation run detail and to-do queue in the left sidebar: progress, current-round targets, failures and pending items, safety and today counts, with run settings, start, dry-run and stop.",
+    "description": "Open X workflow from the conversation toolbar to view run details and pending items, configure runs, and start, dry-run, or stop them.",
     "detail": "docs/DETAIL.md"
   }
 }
