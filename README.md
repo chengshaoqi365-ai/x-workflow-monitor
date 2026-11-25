@@ -22,7 +22,7 @@
 - **停止**：终止正在运行的流程
 - **错误提示**：控制服务未启动、已有任务在运行、启动 / 停止失败
 
-插件只做 UI 和 HTTP 调用：不直接操作 Chrome DOM，不启动 Python，不直接调用 X。所有 X 操作由 `x-desktop-auto` 的 Python 控制服务执行。
+页面通过本机控制服务操作 connect 流程。服务管理的启动操作由 DSH Host 调用固定脚本，只启动 HTTP 服务。
 
 > 数据接口说明：页面优先读取 `GET /status/v2`、`/actions`、`/runs`、`/pending`（契约见 `docs/24-插件UI优化任务书.md` §4）。接口未上线时自动回退到 `GET /status` + `GET /control/status`，缺失字段显示“暂无 / 未接入”空态；回退模式下目标表会从运行日志推断可确认的信息。
 
@@ -44,7 +44,9 @@ http://127.0.0.1:8787/pending
 http://127.0.0.1:8788/control/status
 ```
 
-在 `x-desktop-auto` 项目里启动：
+打开 **X 工作流 → 服务管理**。绿灯表示服务可连接，红灯表示当前不可连接。两个服务都离线时点击 **启动服务**，只有一个离线时按钮会显示该服务的名称。服务就绪后页面自动刷新，启动失败时显示对应脚本和探测错误。
+
+DSH Host 只使用本机 `/Users/shaoqicheng/Documents/x 自动化 /x-desktop-auto/scripts/` 中的固定脚本。也可在终端手动启动：
 
 ```bash
 cd x-desktop-auto
@@ -56,25 +58,20 @@ bash scripts/start_control_server.sh
 
 ## 安装
 
-1. 启动上述两个本机服务。
-2. 打开 DSH Web → **插件**。
-3. **添加插件 → 安装第三方插件**。
-4. 输入本地目录的绝对路径，例如：
+1. 打开 DSH Web → **插件**。
+2. **添加插件 → 安装第三方插件**。
+3. 输入本地目录的绝对路径，例如：
 
 ```text
 /path/to/x-workflow-monitor
 ```
 
-5. 安装后选择 **立即启用**。
-6. 刷新页面后，左侧栏出现 **X 工作流**，点击打开看板。
+4. 安装后选择 **立即启用**。
+5. 刷新页面后，点击左侧栏 **X 工作流** 打开看板。
 
 ### 更新已安装的旧版本
 
-插件目录是通过 `link:` 方式加入 profile 的，修改文件即生效：
-
-1. **插件**页确认 `@local/x-workflow-monitor` 已启用。
-2. 在 DSH Web 按 `Cmd+Shift+R` 硬刷新（`client.js` 会被 HMR 重新加载）。
-3. 若左侧栏没有出现 **X 工作流**，重启 `dsh web` 后再刷新一次。
+对于通过 `link:` 安装的插件，升级到 0.6.0 后需重新加载插件的 Host 部分。支持热重载的 DSH 可通过插件管理重新应用已启用的本地组合包。如果插件管理显示需要重启，请重启 `dsh web`，再刷新原页面。
 
 ## 开发
 
@@ -82,6 +79,7 @@ bash scripts/start_control_server.sh
 node --check client.js
 node --check index.js
 npm run validate
+npm test
 ```
 
 插件结构：
@@ -89,8 +87,8 @@ npm run validate
 ```text
 package.json          DSH 插件 manifest + bundle 配置
 cordis.patch.yml      Host 插件行
-index.js              Host 半部分（空）
-client.js             左侧栏完整页面（状态 + 运行控制）
+index.js              Host 服务启动接口
+client.js             左侧栏页面（状态、服务管理、运行控制）
 locale/zh.json        中文展示元信息
 locale/en.json        英文展示元信息
 docs/DETAIL.md        插件详情页文档

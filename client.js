@@ -15,6 +15,7 @@ window.__ModuleLoader__.load({
     const CONTROL_STATUS_ENDPOINT = 'http://127.0.0.1:8788/control/status';
     const CONTROL_RUN_ENDPOINT = 'http://127.0.0.1:8788/control/run';
     const CONTROL_STOP_ENDPOINT = 'http://127.0.0.1:8788/control/stop';
+    const SERVICE_START_ENDPOINT = 'api/x-workflow-monitor/services/start';
     const PER_ROUND = 30;
     const CONTROL_POLL_MS = 2000;
     const STATUS_POLL_MS = 5000;
@@ -57,7 +58,6 @@ window.__ModuleLoader__.load({
       'button.stop': '停止',
       'button.starting': '启动中…',
       'button.stopping': '停止中…',
-      'button.retry': '重试',
       'button.close': '关闭',
       'button.done': '完成',
       'button.viewAll': '查看全部',
@@ -68,7 +68,17 @@ window.__ModuleLoader__.load({
       'button.openSettings': '修改',
 
       'error.controlUnavailable': '控制服务未启动，请在 x-desktop-auto 运行 bash scripts/start_control_server.sh',
-      'error.statusUnavailable': '状态服务未连接。在 x-desktop-auto 目录运行：python3 scripts/status_server.py',
+      'services.title': '服务管理',
+      'services.status': '状态服务',
+      'services.control': '控制服务',
+      'services.checking': '{service}检测中',
+      'services.running': '{service}运行中',
+      'services.offline': '{service}未运行',
+      'services.start': '启动服务',
+      'services.startStatus': '启动状态服务',
+      'services.startControl': '启动控制服务',
+      'services.failed': '服务启动失败：{detail}',
+      'services.unreachable': '{service}已就绪，页面仍无法连接',
       'error.alreadyRunning': '已有任务在运行',
       'error.startFailed': '启动失败：{detail}',
       'error.stopFailed': '停止失败：{detail}',
@@ -295,7 +305,6 @@ window.__ModuleLoader__.load({
       'button.stop': 'Stop',
       'button.starting': 'Starting…',
       'button.stopping': 'Stopping…',
-      'button.retry': 'Retry',
       'button.close': 'Close',
       'button.done': 'Done',
       'button.viewAll': 'View all',
@@ -306,7 +315,17 @@ window.__ModuleLoader__.load({
       'button.openSettings': 'Change',
 
       'error.controlUnavailable': 'Control service is not running. In x-desktop-auto run bash scripts/start_control_server.sh',
-      'error.statusUnavailable': 'Status service is not connected. In the x-desktop-auto directory run: python3 scripts/status_server.py',
+      'services.title': 'Service management',
+      'services.status': 'Status service',
+      'services.control': 'Control service',
+      'services.checking': 'Checking {service}',
+      'services.running': '{service} running',
+      'services.offline': '{service} stopped',
+      'services.start': 'Start services',
+      'services.startStatus': 'Start status service',
+      'services.startControl': 'Start control service',
+      'services.failed': 'Service startup failed: {detail}',
+      'services.unreachable': '{service} is ready, but this page cannot connect',
       'error.alreadyRunning': 'A task is already running',
       'error.startFailed': 'Failed to start: {detail}',
       'error.stopFailed': 'Failed to stop: {detail}',
@@ -560,7 +579,11 @@ window.__ModuleLoader__.load({
 .xwm-pill-failed,.xwm-pill-disconnected{color:${T.red}}
 .xwm-pill-idle{color:${T.muted}}
 .xwm-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-radius:10px;border:1px solid ${T.border};background:${T.soft};color:${T.red};font-size:12px;line-height:1.6;margin-bottom:12px;flex-wrap:wrap}
-.xwm-banner-info{color:${T.secondary}}
+.xwm-services{padding:9px 12px;margin-top:10px;border:1px solid ${T.border};border-radius:10px;background:${T.soft};font-size:12px;line-height:1.6}
+.xwm-services-row,.xwm-service-states{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.xwm-services-row{justify-content:space-between}
+.xwm-service-state{display:inline-flex;align-items:center;gap:6px;color:${T.secondary}}
+.xwm-service-error{margin:6px 0 0;color:${T.red};overflow-wrap:anywhere}
 .xwm-progress-card{border:1px solid ${T.border};border-radius:14px;background:${T.bg};padding:13px 16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .xwm-progress-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .xwm-progress-numbers{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
@@ -945,83 +968,85 @@ window.__ModuleLoader__.load({
     // ---------------------------------------------------------------------
     function useStatusFeed() {
       const [state, setState] = useState({ loading: true, mode: 'legacy', data: null, error: '' });
-      const mounted = useRef(true);
-      const refresh = useCallback(async () => {
+      const requestId = useRef(0);
+      const refreshing = useRef(false);
+      const refresh = useCallback(async (poll = false) => {
+        if (poll && refreshing.current) return;
+        const id = ++requestId.current;
+        refreshing.current = true;
         try {
-          const res = await fetch(STATUS_V2_ENDPOINT, { cache: 'no-store' });
+          const res = await fetch(STATUS_V2_ENDPOINT, { cache: 'no-store', signal: AbortSignal.timeout(2000) });
           if (res.ok) {
             const data = await res.json();
             if (data && data.ok === true && data.run) {
-              if (mounted.current) setState({ loading: false, mode: 'v2', data, error: '' });
-              return;
+              if (id === requestId.current) setState({ loading: false, mode: 'v2', data, error: '' });
+              return true;
             }
           }
         } catch (err) {
           // /status/v2 is optional; fall through to the legacy endpoint.
         }
         try {
-          const res = await fetch(STATUS_ENDPOINT, { cache: 'no-store' });
+          const res = await fetch(STATUS_ENDPOINT, { cache: 'no-store', signal: AbortSignal.timeout(2000) });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const data = await res.json();
-          if (mounted.current) setState({ loading: false, mode: 'legacy', data, error: '' });
+          if (id === requestId.current) setState({ loading: false, mode: 'legacy', data, error: '' });
+          return true;
         } catch (err) {
-          if (mounted.current) setState((prev) => ({ ...prev, loading: false, error: String(err) }));
+          if (id === requestId.current) setState((prev) => ({ ...prev, loading: false, error: String(err) }));
+          return false;
+        } finally {
+          if (id === requestId.current) refreshing.current = false;
         }
       }, []);
       useEffect(() => {
-        mounted.current = true;
         refresh();
-        const timer = setInterval(refresh, STATUS_POLL_MS);
-        return () => { mounted.current = false; clearInterval(timer); };
+        const timer = setInterval(() => refresh(true), STATUS_POLL_MS);
+        return () => { requestId.current += 1; clearInterval(timer); };
       }, [refresh]);
       return { ...state, refresh };
     }
 
     function useControlStatus() {
       const [state, setState] = useState({ loading: true, connected: false, control: null });
-      const mounted = useRef(true);
+      const requestId = useRef(0);
+      const refreshing = useRef(false);
       const adopt = useCallback((control) => {
         if (!control) return;
         setState({ loading: false, connected: true, control });
       }, []);
-      const refresh = useCallback(async () => {
+      const refresh = useCallback(async (poll = false) => {
+        if (poll && refreshing.current) return;
+        const id = ++requestId.current;
+        refreshing.current = true;
         try {
-          const res = await fetch(CONTROL_STATUS_ENDPOINT, { cache: 'no-store' });
+          const res = await fetch(CONTROL_STATUS_ENDPOINT, { cache: 'no-store', signal: AbortSignal.timeout(1500) });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const data = await res.json();
           if (!data || data.ok !== true || !data.control) throw new Error('invalid response');
-          if (mounted.current) setState({ loading: false, connected: true, control: data.control });
+          if (id === requestId.current) setState({ loading: false, connected: true, control: data.control });
           return data.control;
         } catch (err) {
-          if (mounted.current) setState((prev) => ({ loading: false, connected: false, control: prev.control }));
+          if (id === requestId.current) setState((prev) => ({ loading: false, connected: false, control: prev.control }));
           return null;
+        } finally {
+          if (id === requestId.current) refreshing.current = false;
         }
       }, []);
       useEffect(() => {
-        mounted.current = true;
-        const tick = async () => {
-          try {
-            const res = await fetch(CONTROL_STATUS_ENDPOINT, { cache: 'no-store' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
-            if (!data || data.ok !== true || !data.control) throw new Error('invalid response');
-            if (mounted.current) setState({ loading: false, connected: true, control: data.control });
-          } catch (err) {
-            if (mounted.current) setState((prev) => ({ loading: false, connected: false, control: prev.control }));
-          }
-        };
-        tick();
-        const timer = setInterval(tick, CONTROL_POLL_MS);
-        return () => { mounted.current = false; clearInterval(timer); };
-      }, []);
+        refresh();
+        const timer = setInterval(() => refresh(true), CONTROL_POLL_MS);
+        return () => { requestId.current += 1; clearInterval(timer); };
+      }, [refresh]);
       return { ...state, refresh, adopt };
     }
 
-    function useOptionalEndpoint(url, intervalMs) {
+    function useOptionalEndpoint(url, intervalMs, enabled) {
       const [state, setState] = useState({ loading: true, data: null, error: '' });
       useEffect(() => {
         let alive = true;
-        setState({ loading: true, data: null, error: '' });
+        setState({ loading: enabled, data: null, error: '' });
+        if (!enabled) return;
         const tick = async () => {
           try {
             const res = await fetch(url, { cache: 'no-store' });
@@ -1036,7 +1061,7 @@ window.__ModuleLoader__.load({
         tick();
         const timer = setInterval(tick, intervalMs || OPTIONAL_POLL_MS);
         return () => { alive = false; clearInterval(timer); };
-      }, [url, intervalMs]);
+      }, [url, intervalMs, enabled]);
       return state;
     }
 
@@ -1872,10 +1897,82 @@ window.__ModuleLoader__.load({
       }
     }
 
+    function ServiceManagement({ statusFeed, controlApi, statusConnected, t }) {
+      const [starting, setStarting] = useState(false);
+      const [errors, setErrors] = useState({});
+      const inFlight = useRef(false);
+      const statusOffline = !statusFeed.loading && !statusConnected;
+      const controlOffline = !controlApi.loading && !controlApi.connected;
+      const offline = statusOffline || controlOffline;
+      const detail = [statusOffline && errors.status, controlOffline && errors.control].filter(Boolean).join(' · ');
+      useEffect(() => {
+        setErrors((previous) => {
+          if (!(statusConnected && previous.status) && !(controlApi.connected && previous.control)) return previous;
+          return { status: statusConnected ? undefined : previous.status, control: controlApi.connected ? undefined : previous.control };
+        });
+      }, [statusConnected, controlApi.connected]);
+      const startLabel = statusOffline && controlOffline ? 'services.start'
+        : statusOffline ? 'services.startStatus' : 'services.startControl';
+
+      const startServices = async () => {
+        if (inFlight.current || !offline) return;
+        inFlight.current = true;
+        setStarting(true);
+        const services = [statusOffline && 'status', controlOffline && 'control'].filter(Boolean);
+        const refresh = { status: statusFeed.refresh, control: controlApi.refresh };
+        setErrors({});
+        try {
+          const response = await fetch(new URL(SERVICE_START_ENDPOINT, document.baseURI), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ services }),
+            redirect: 'error',
+            signal: AbortSignal.timeout(20000),
+          });
+          const payload = await response.json().catch(() => null);
+          if (!payload?.services) throw new Error(payload?.error || `HTTP ${response.status}`);
+          const failures = await Promise.all(services.map(async (id) => {
+            if (await refresh[id]()) return [id, undefined];
+            return [id, payload.services[id]?.error || t('services.unreachable', { service: t('services.' + id) })];
+          }));
+          setErrors(Object.fromEntries(failures));
+        } catch (err) {
+          setErrors(Object.fromEntries(services.map((id) => [id, err.message || String(err)])));
+        } finally {
+          inFlight.current = false;
+          setStarting(false);
+        }
+      };
+
+      const indicator = (key, port, loading, connected) => {
+        const state = loading ? 'checking' : connected ? 'running' : 'offline';
+        const color = loading ? T.muted : connected ? T.green : T.red;
+        return h('span', { className: 'xwm-service-state' },
+          h('span', { className: 'xwm-pill-dot', 'aria-hidden': true, style: { background: color } }),
+          t('services.' + state, { service: t(key) }) + ' · ' + port
+        );
+      };
+
+      return h('section', { className: 'xwm-services', 'aria-label': t('services.title') },
+        h('div', { className: 'xwm-services-row' },
+          h('div', { className: 'xwm-service-states', role: 'status' },
+            h('strong', null, t('services.title')),
+            indicator('services.status', 8787, statusFeed.loading, statusConnected),
+            indicator('services.control', 8788, controlApi.loading, controlApi.connected)
+          ),
+          starting || offline ? h(Button, { variant: 'primary', small: true, disabled: starting, onClick: startServices },
+            t(starting ? 'button.starting' : startLabel)
+          ) : null
+        ),
+        detail ? h('p', { className: 'xwm-service-error', role: 'alert' }, t('services.failed', { detail })) : null
+      );
+    }
+
     function WorkflowPage({ t }) {
       const tr = typeof t === 'function' ? t : (key) => key;
       const statusFeed = useStatusFeed();
       const controlApi = useControlStatus();
+      const statusConnected = !statusFeed.loading && !statusFeed.error && !!statusFeed.data;
       const [settings, setSettings] = useState(loadSettings);
       const [settingsOpen, setSettingsOpen] = useState(false);
       const [drawerOpen, setDrawerOpen] = useState(false);
@@ -1888,9 +1985,9 @@ window.__ModuleLoader__.load({
       const now = useNow(running);
       const runId = control && control.run_id ? String(control.run_id) : '';
       const actionsUrl = ACTIONS_ENDPOINT + '?limit=100' + (runId ? '&run_id=' + encodeURIComponent(runId) : '');
-      const actionsApi = useOptionalEndpoint(actionsUrl, 15000);
-      const runsApi = useOptionalEndpoint(RUNS_ENDPOINT + '?limit=10', OPTIONAL_POLL_MS);
-      const pendingApi = useOptionalEndpoint(PENDING_ENDPOINT + '?limit=100', OPTIONAL_POLL_MS);
+      const actionsApi = useOptionalEndpoint(actionsUrl, 15000, statusConnected);
+      const runsApi = useOptionalEndpoint(RUNS_ENDPOINT + '?limit=10', OPTIONAL_POLL_MS, statusConnected);
+      const pendingApi = useOptionalEndpoint(PENDING_ENDPOINT + '?limit=100', OPTIONAL_POLL_MS, statusConnected);
 
       const vm = useMemo(() => buildViewModel({
         statusFeed,
@@ -2077,18 +2174,11 @@ window.__ModuleLoader__.load({
               h(Button, { variant: 'secondary', disabled: !canStart, onClick: () => start(true) }, pendingAction === 'dry' ? tr('button.starting') : tr('button.dryRun')),
               h(Button, { variant: 'danger', disabled: !canStop, onClick: stop }, pendingAction === 'stop' ? tr('button.stopping') : tr('button.stop'))
             )
-          )
+          ),
+          h(ServiceManagement, { statusFeed, controlApi, statusConnected, t: tr })
         ),
         h('div', { className: 'xwm-scroll' },
           h('div', { className: 'xwm-content' },
-            statusFeed.error && !statusFeed.data ? h('div', { className: 'xwm-banner xwm-banner-info', role: 'alert' },
-              h('span', null, tr('error.statusUnavailable')),
-              h(Button, { variant: 'secondary', small: true, onClick: statusFeed.refresh }, tr('button.retry'))
-            ) : null,
-            !controlApi.connected ? h('div', { className: 'xwm-banner', role: 'alert' },
-              h('span', null, tr('error.controlUnavailable')),
-              h(Button, { variant: 'secondary', small: true, onClick: controlApi.refresh }, tr('button.retry'))
-            ) : null,
             actionError ? h('div', { className: 'xwm-banner', role: 'alert' }, h('span', null, actionError)) : null,
             h('div', { className: 'xwm-status-wrap' },
               h(ProgressPanel, { vm, t: tr })

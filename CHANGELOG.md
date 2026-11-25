@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- Add service management with separate status and control indicators. Start any stopped service from the dashboard and refresh its data when ready.
+- Use an authenticated DSH Host endpoint to check readiness and invoke only the two fixed HTTP service startup scripts.
+
 ## 0.5.0
 
 - Rebuild the page as **run detail + to-do queue**: fixed header, sticky progress bar, target table, pending card, run details and safety/pacing card.
