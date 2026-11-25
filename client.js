@@ -222,12 +222,6 @@ window.__ModuleLoader__.load({
       'logs.lines': '显示 {shown}/{total} 行',
       'logs.tailNote': '控制服务当前只保留最近 {count} 行日志；接口扩展后可保留 200 行以上。',
 
-      'pools.title': '发现池 / 候选人池',
-      'pools.discoveries': '发现池',
-      'pools.candidates': '候选人池',
-      'pools.empty': '暂无记录',
-      'pools.followers': '{count} 粉丝',
-
       'settings.title': '运行设置',
       'settings.rounds': '轮数',
       'settings.roundsHint': '1–10 轮，默认 3 轮',
@@ -469,12 +463,6 @@ window.__ModuleLoader__.load({
       'logs.lines': 'Showing {shown}/{total} lines',
       'logs.tailNote': 'The control service keeps only the latest {count} lines; the API can expose 200+ lines later.',
 
-      'pools.title': 'Discovery / candidate pool',
-      'pools.discoveries': 'Discoveries',
-      'pools.candidates': 'Candidates',
-      'pools.empty': 'No records',
-      'pools.followers': '{count} followers',
-
       'settings.title': 'Run settings',
       'settings.rounds': 'Rounds',
       'settings.roundsHint': '1–10 rounds, default 3',
@@ -675,10 +663,7 @@ window.__ModuleLoader__.load({
 .xwm-log::-webkit-scrollbar{width:9px}
 .xwm-log::-webkit-scrollbar-thumb{background:${T.borderStrong};border-radius:999px}
 .xwm-log-meta{font-size:10px;color:${T.muted};margin-top:6px;line-height:1.6}
-.xwm-pool-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:12px}
-.xwm-pool-title{font-size:11px;color:${T.muted};margin-bottom:6px}
-.xwm-pool-item{font-size:12px;color:${T.text};line-height:1.6;padding:4px 0;border-bottom:1px dashed ${T.border};overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.xwm-pool-item:last-child{border-bottom:none}
+.xwm-subsection-title{font-size:11px;color:${T.muted};margin-bottom:6px}
 .xwm-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .xwm-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .xwm-field label{font-size:12px;font-weight:600;color:${T.secondary}}
@@ -708,7 +693,6 @@ window.__ModuleLoader__.load({
   .xwm-table-head .xwm-col-time,.xwm-trow .xwm-col-time{display:none}
   .xwm-today{grid-template-columns:repeat(3,minmax(0,1fr))}
   .xwm-settings-grid{grid-template-columns:1fr}
-  .xwm-pool-grid{grid-template-columns:1fr}
   .xwm-topbar{padding-top:14px}
   .xwm-title{font-size:19px}
 }
@@ -1230,8 +1214,6 @@ window.__ModuleLoader__.load({
         blockers,
         log,
         runLogLines: log.lines,
-        recentTweets: (payload && payload.recent_tweets) || [],
-        recentCandidates: (payload && payload.recent_candidates) || [],
         dataUpdatedAt: payload ? (payload.updated_at || payload.generated_at || '') : '',
         dataAge: payload && numberOrNull(payload.data_age_seconds) != null ? numberOrNull(payload.data_age_seconds) : null,
       };
@@ -1499,7 +1481,7 @@ window.__ModuleLoader__.load({
           summary && !vm.pendingAvailable && count !== 0 ? h('div', { className: 'xwm-empty', style: { padding: '12px 8px' } }, t('pending.countOnly', { count: count == null ? '—' : count })) : null,
           summary && !vm.pendingAvailable && count === 0 ? h('div', { className: 'xwm-empty', style: { padding: '12px 8px' } }, t('pending.empty')) : null,
           failed.length ? h('div', null,
-            h('div', { className: 'xwm-pool-title' }, t('pending.failed', { count: failed.length })),
+            h('div', { className: 'xwm-subsection-title' }, t('pending.failed', { count: failed.length })),
             failed.map((item, index) => h('div', { className: 'xwm-pending-item', key: 'f-' + index },
               h('div', { className: 'xwm-pending-main' },
                 h('div', { className: 'xwm-pending-handle' }, '@' + item.handle),
@@ -1513,7 +1495,7 @@ window.__ModuleLoader__.load({
             ))
           ) : null,
           never.length ? h('div', { style: { marginTop: failed.length ? 10 : 0 } },
-            h('div', { className: 'xwm-pool-title' }, t('pending.never', { count: never.length })),
+            h('div', { className: 'xwm-subsection-title' }, t('pending.never', { count: never.length })),
             never.map((item, index) => h('div', { className: 'xwm-pending-item', key: 'n-' + index },
               h('div', { className: 'xwm-pending-main' },
                 h('div', { className: 'xwm-pending-handle' }, '@' + item.handle),
@@ -1566,7 +1548,7 @@ window.__ModuleLoader__.load({
           h(SafetyRow, { label: t('safety.egress'), value: egressText, color: egressColor }),
           h(SafetyRow, { label: t('safety.timezone'), value: zone ? zone : t('safety.timezoneUnknown'), color: zone ? T.green : T.orange }),
           h('div', { style: { marginTop: 12 } },
-            h('div', { className: 'xwm-pool-title' }, t('safety.today') + ' · ' + (vm.today.legacy ? t('safety.todayHintLegacy') : t('safety.todayHint'))),
+            h('div', { className: 'xwm-subsection-title' }, t('safety.today') + ' · ' + (vm.today.legacy ? t('safety.todayHintLegacy') : t('safety.todayHint'))),
             h('div', { className: 'xwm-today' },
               h('div', { className: 'xwm-today-cell' }, h('span', { className: 'xwm-today-label' }, t('safety.today.follow')), h('span', { className: 'xwm-today-value' }, valueOr(vm.today.follow))),
               h('div', { className: 'xwm-today-cell' }, h('span', { className: 'xwm-today-label' }, t('safety.today.like')), h('span', { className: 'xwm-today-value' }, valueOr(vm.today.like))),
@@ -1749,24 +1731,7 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function PoolsPanel({ vm, t }) {
-      const tweets = vm.recentTweets || [];
-      const candidates = vm.recentCandidates || [];
-      return h('div', { className: 'xwm-pool-grid' },
-        h('div', null,
-          h('div', { className: 'xwm-pool-title' }, t('pools.discoveries')),
-          tweets.length ? tweets.map((tweet, index) => h('div', { key: index, className: 'xwm-pool-item', title: tweet.text },
-            '@' + tweet.author + ' · ' + tweet.text)) : h('div', { className: 'xwm-pool-item' }, t('pools.empty'))
-        ),
-        h('div', null,
-          h('div', { className: 'xwm-pool-title' }, t('pools.candidates')),
-          candidates.length ? candidates.map((candidate, index) => h('div', { key: index, className: 'xwm-pool-item' },
-            '@' + candidate.handle + ' · ' + candidate.status + (candidate.followers != null ? ' · ' + t('pools.followers', { count: candidate.followers }) : ''))) : h('div', { className: 'xwm-pool-item' }, t('pools.empty'))
-        )
-      );
-    }
-
-    function SettingsForm({ settings, onChange, disabled, t }) {
+    function SettingsForm({ settings, onChange, t }) {
       const [roundsText, setRoundsText] = useState(String(settings.rounds));
       const [followsText, setFollowsText] = useState(String(settings.maxNewFollows));
       const [error, setError] = useState('');
@@ -1811,7 +1776,6 @@ window.__ModuleLoader__.load({
               max: 10,
               step: 1,
               value: roundsText,
-              disabled,
               onInput: (event) => {
                 setRoundsText(event.target.value);
                 emit(event.target.value, followsText);
@@ -1830,7 +1794,6 @@ window.__ModuleLoader__.load({
               max: 100,
               step: 1,
               value: followsText,
-              disabled,
               onInput: (event) => {
                 setFollowsText(event.target.value);
                 emit(roundsText, event.target.value);
@@ -1845,26 +1808,44 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function SettingsDialog({ settings, onChange, onClose, t }) {
+    function SettingsDialog({ settings, onChange, onClose, opener, t }) {
+      const dialogRef = useRef(null);
       useEffect(() => {
-        const onKey = (event) => { if (event.key === 'Escape') onClose(); };
+        const dialog = dialogRef.current;
+        const controls = dialog.querySelectorAll('button, input');
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        const onKey = (event) => {
+          if (event.key === 'Escape') {
+            onClose();
+            return;
+          }
+          if (event.key !== 'Tab') return;
+          const active = document.activeElement;
+          if (!dialog.contains(active) || active === (event.shiftKey ? first : last)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+          }
+        };
         document.addEventListener('keydown', onKey);
         const previous = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        dialog.querySelector('input').focus();
         return () => {
           document.removeEventListener('keydown', onKey);
           document.body.style.overflow = previous;
+          opener?.focus();
         };
-      }, [onClose]);
+      }, [onClose, opener]);
       return ReactDOM.createPortal(
         h('div', { className: 'xwm-overlay', onMouseDown: (event) => { if (event.target === event.currentTarget) onClose(); } },
-          h('div', { className: 'xwm-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('settings.title') },
+          h('div', { ref: dialogRef, className: 'xwm-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('settings.title') },
             h('div', { className: 'xwm-dialog-head' },
               h('div', { className: 'xwm-dialog-title' }, t('settings.title')),
               h(Button, { variant: 'ghost', small: true, onClick: onClose, ariaLabel: t('button.close') }, '✕')
             ),
             h('div', { className: 'xwm-dialog-body' },
-              h(SettingsForm, { settings, onChange, disabled: false, t }),
+              h(SettingsForm, { settings, onChange, t }),
               h('div', { className: 'xwm-field-hint', style: { marginTop: 14, lineHeight: 1.7 } }, t('settings.note'))
             ),
             h('div', { className: 'xwm-dialog-foot' },
@@ -1974,7 +1955,8 @@ window.__ModuleLoader__.load({
       const controlApi = useControlStatus();
       const statusConnected = !statusFeed.loading && !statusFeed.error && !!statusFeed.data;
       const [settings, setSettings] = useState(loadSettings);
-      const [settingsOpen, setSettingsOpen] = useState(false);
+      const [settingsOpener, setSettingsOpener] = useState(null);
+      const closeSettings = useCallback(() => setSettingsOpener(null), []);
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [pendingAction, setPendingAction] = useState('');
       const [actionError, setActionError] = useState('');
@@ -2169,7 +2151,7 @@ window.__ModuleLoader__.load({
               )
             ),
             h('div', { className: 'xwm-actions' },
-              h(Button, { variant: 'secondary', onClick: () => setSettingsOpen(true), title: tr('settings.summary', { rounds: settings.rounds, perRound: PER_ROUND, maxNewFollows: settings.maxNewFollows }) }, tr('button.settings')),
+              h(Button, { variant: 'secondary', onClick: (event) => setSettingsOpener(event.currentTarget), title: tr('settings.summary', { rounds: settings.rounds, perRound: PER_ROUND, maxNewFollows: settings.maxNewFollows }) }, tr('button.settings')),
               h(Button, { variant: 'primary', disabled: !canStart, onClick: () => start(false) }, pendingAction === 'run' ? tr('button.starting') : tr('button.start')),
               h(Button, { variant: 'secondary', disabled: !canStart, onClick: () => start(true) }, pendingAction === 'dry' ? tr('button.starting') : tr('button.dryRun')),
               h(Button, { variant: 'danger', disabled: !canStop, onClick: stop }, pendingAction === 'stop' ? tr('button.stopping') : tr('button.stop'))
@@ -2197,19 +2179,10 @@ window.__ModuleLoader__.load({
             h(ReplyAuditCard, { vm, t: tr }),
             h(Section, { t: tr, title: tr('logs.title'), subtitle: tr('logs.subtitle'), defaultOpen: false },
               h(LogPanel, { vm, t: tr })
-            ),
-            h(Section, { t: tr, title: tr('pools.title'), defaultOpen: false },
-              h(PoolsPanel, { vm, t: tr })
-            ),
-            h(Section, { t: tr, title: tr('settings.title'), subtitle: tr('settings.summary', { rounds: settings.rounds, perRound: PER_ROUND, maxNewFollows: settings.maxNewFollows }), defaultOpen: false },
-              h('div', { style: { paddingTop: 12 } },
-                h(SettingsForm, { settings, onChange: saveSettings, disabled: runningNow, t: tr }),
-                h('div', { className: 'xwm-field-hint', style: { marginTop: 12, lineHeight: 1.7 } }, tr('settings.note'))
-              )
             )
           )
         ),
-        settingsOpen ? h(SettingsDialog, { settings, onChange: saveSettings, onClose: () => setSettingsOpen(false), t: tr }) : null,
+        settingsOpener ? h(SettingsDialog, { settings, onChange: saveSettings, onClose: closeSettings, opener: settingsOpener, t: tr }) : null,
         drawerOpen ? h(ViewAllDrawer, { vm, t: tr, onClose: () => setDrawerOpen(false) }) : null,
         toast ? h('div', { className: 'xwm-toast', role: 'status' }, toast) : null
       );

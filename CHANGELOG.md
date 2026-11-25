@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- Remove the discovery and candidate pools and the duplicate Run settings section from the bottom of the dashboard. Run settings is available from the header.
+- Move keyboard focus into the Run settings dialog when it opens. Keep Tab navigation inside the dialog and return focus to the header button when it closes.
+
 ## 0.6.0
 
 - Add service management with separate status and control indicators. Start any stopped service from the dashboard and refresh its data when ready.
